@@ -1,10 +1,10 @@
 ---
 title: "Inference Simulations"
 subtitle: "PSYC 201A, Simulation Lab 2"
-author: "Your name here"
+author: "Will Hammond"
 date: today
 format:
-  html:
+  pdf:
     toc: true
     embed-resources: true
 execute:
@@ -78,7 +78,7 @@ tea_data <- make_tea_data(n_total = 18, delta = .5)
 Now, make a new data frame (call it `tea_data_highn`) with an N of 48, or something higher if you want. You need to call the custom function. Keep the same small effect (`delta = .5`): we come back to this experiment in Parts 2 and 3.
 
 ```{r}
-
+tea_data_highn <- make_tea_data(n_total=48, delta =.5)
 ```
 
 To do: OK, look at these data. How long are they, what are the column names? Look at them in your console by copy and pasting the variable names into R.
@@ -88,7 +88,9 @@ Call `summary(tea_data)` and look at the outputs. Call `head(tea_data)` to look 
 To do: Write basic tidyverse code to calculate the mean of each condition (hint: use `group_by` and `summarize`).
 
 ```{r}
-
+tea_data %>%
+  group_by(condition) %>%
+  summarize(mean=mean(rating))
  
 ```
 
@@ -125,7 +127,9 @@ samps <- tibble(sim = 1:1000) |>
 OK, copy this but now change it so that you 48 participants per experiment
 
 ```{r}
-samps_highn <-...
+samps_highn <- tibble(sim = 1:1000) |> 
+  mutate(data = map(sim, \(i) make_tea_data(n_total = 48, delta = 1.5))) |>  # simulate
+  unnest(cols = data) # wrangle
 ```
 
 ### Summarize both of these simulations
@@ -139,16 +143,16 @@ To do: Comment what each line of code is doing to check your understanding, and 
 Bonus: Figure out a way to do this that is better than I what I did (some mix of base R and tidyverse, I'm sure there's a tidyverse only way)
 
 ```{r}
-tea_data_summary <- samps |>
-  group_by(sim, condition) |> 
-  summarise(mean_rating = mean(rating)) |> 
+tea_data_summary <- samps |> #creating a new df with the simulation
+  group_by(sim, condition) |>  #isolating sim and condition
+  summarise(mean_rating = mean(rating)) |> #calculating the mean
   group_by(sim) |> 
-  summarise(delta = mean_rating[condition == "milk first"] -
+  summarise(delta = mean_rating[condition == "milk first"] - #calculating difference in means
               mean_rating[condition == "tea first"])
 ```
 
 ```{r}
-tea_data_highn_summary <- samps_highn |>
+tea_data_highn_summary <- samps_highn |> #same thing with high n data
   group_by(sim, condition) |> 
   summarise(mean_rating = mean(rating)) |> 
   group_by(sim) |> 
@@ -161,7 +165,8 @@ tea_data_highn_summary <- samps_highn |>
 Let's make a plot to plot the differences in ratings across conditions for the low-n condition. You'll need to use ggplot or `hist`
 
 ```{r}
-
+ggplot(tea_data_summary,aes(x=delta))+
+         geom_histogram()
 ```
 
 ### Plot difference for higher-n
@@ -169,7 +174,8 @@ Let's make a plot to plot the differences in ratings across conditions for the l
 To do: What's different about this distribution vs the one we just plotted?
 
 ```{r}
-
+ggplot(tea_data_highn_summary,aes(x=delta))+
+         geom_histogram()
 ```
 
 **Bonus** What happens if you run it again, but this time try changing the variance / mean of the effect when you change the `delta` and `sigma` values in the data simulation.
@@ -188,13 +194,24 @@ Call the simulated experiments `null_model` and use 18 participants per experime
 
 ```{r}
 # Simulate the null distribution
-  
+ null_model <- tibble(sim = 1:1000) |> 
+  mutate(data = map(sim, \(i) make_tea_data(n_total = 18, delta = 0))) |>  # simulate
+  unnest(cols = data) # wrangle
+
+null_model_summary <- null_model |> #creating a new df with the simulation
+  group_by(sim, condition) |>  #isolating sim and condition
+  summarise(mean_rating = mean(rating)) |> #calculating the mean
+  group_by(sim) |> 
+  summarise(delta = mean_rating[condition == "milk first"] - #calculating difference in means
+              mean_rating[condition == "tea first"])
+
 ```
 
 Visualize what this null distribution actually looks like.
 
 ```{r}
-
+ggplot(null_model_summary,aes(x=delta))+
+         geom_histogram()
 ```
 
 ### Method 2: Shuffling
